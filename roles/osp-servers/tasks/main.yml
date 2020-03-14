@@ -1,10 +1,10 @@
 ---
+#- name: include role and loop with vars file
+#  include_vars:
+#    file: roles/osp-servers/vars/main.yml
 
-# tasks file for osp.servers
-- name: Create new server instances and attaches them a network and passes metadata to the instance
-
-
-- name: Add floating IP to Servers
-   
-
-- name: Wait for server to be available
+- name: include role and loop with vars file
+  include_tasks:
+    file: create_instance.yml
+  loop: "{{ osp_servers|dict2items }}"
+  when: item.value != ""

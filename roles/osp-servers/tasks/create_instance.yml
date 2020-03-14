@@ -1,0 +1,45 @@
+---
+
+# tasks file for osp.servers
+#- name: Create new server instances and attaches them a network and passes metadata to the instance
+
+- name: Create a server instance "{{ item.value.name }}"
+  os_server:
+    cloud: ospcloud
+    name: "{{ item.value.name }}"
+    image: rhel-guest
+    meta: "group={{ item.value.meta.group }},deployment_name={{ item.value.meta.deployment_name }}"
+    flavor: "{{ item.value.flavor }}"
+    security_groups: "{{ item.value.security_group }}"
+    key_name: ansible_ssh
+    wait: yes
+    nics:
+    - net-name: int_network
+    userdata: |
+      #!/bin/bash
+      curl -o /tmp/openstack.pub http://www.opentlc.com/download/ansible_bootcamp/openstack_keys/openstack.pub
+      cat /tmp/openstack.pub >> /home/cloud-user/.ssh/authorized_keys
+  register: instanceip
+
+
+- name: Add floating IP to "{{ item.value.name }}"
+  os_floating_ip:
+    cloud: ospcloud
+    state: present
+    reuse: yes
+    server: "{{ item.value.name }}"
+    network: ext_network
+    wait: true
+    timeout: 180
+  register: instancefloatingip
+  
+- name: Show "{{ instanceip }}" public IP
+  debug: var=instancefloatingip.floating_ip.floating_ip_address
+
+- name: Wait for "{{ item.value.name }}" to be available
+  wait_for:
+    host: "{{ instancefloatingip.floating_ip.floating_ip_address }}"
+    port: 22
+    search_regex: OpenSSH
+    timeout: 600
+  delegate_to: "{{ inventory_hostname }}"
