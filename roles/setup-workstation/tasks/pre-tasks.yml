@@ -1,7 +1,7 @@
 - name: yum clean
   shell: yum clean all
 - name: install pip
-  yum:
+  package:
     name:
       - python-pip
 - name: Install openstacksdk library
